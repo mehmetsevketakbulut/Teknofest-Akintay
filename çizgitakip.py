@@ -81,8 +81,9 @@ while True:
     # 'q' tuşuna basılırsa çık
 
 
-    if cv2.waitKey(1) & 0xFF == ord('esc'):
+    if cv2.waitKey(1) & 0xFF == 27:
         break
+    # 'ESC' tuşuna basılırsa çık
 
 cap.release()
 cv2.destroyAllWindows()
