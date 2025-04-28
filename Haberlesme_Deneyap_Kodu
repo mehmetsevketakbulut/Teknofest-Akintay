@@ -1,3 +1,4 @@
+// KODUN ÖZETİ: Deneyapa bağlı mesafe sensörünün değerleri seri porta yazdırılıyor.
 String received_data = "";  // Gelen veriyi tutmak için değişken
 #define TRIG_PIN D0
 #define ECHO_PIN D1
