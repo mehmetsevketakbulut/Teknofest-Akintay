@@ -1,0 +1,4 @@
+Deneyap Karttan Pythona veri aktarma, Deneyap kartın seri portu üzerinden yapılır. 
+Örnek çalışmada mesafe sensöründen (ilerde sonar olacak inşallah) gelen veri seri porta yazdırılır. 
+Pythonda deneyap kart, port ve haberleşme hızı bilgileriyle birlikte tamınlanır: deneyap=serial.Serial("COM3",9600) 
+veri=deneyap.readline() ve print(veri) kodlarıyla deneyapın seri portundaki veriler okunup pythona aktarılmış olur.
