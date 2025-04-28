@@ -21,9 +21,8 @@ void setup() {
 void loop() {
   // Seri porttan gelen veriyi kontrol et
   if (Serial.available() > 0) {
-    // Gelen veriyi oku ve '\n' karakterine kadar bekle
-    String new_data = Serial.readStringUntil('\n');
-
+    // Gelen veriyi oku ve '\n' karakterine kadar bekle    
+    String new_data = Serial.readStringUntil('\n')
     if (new_data == "uyandır") {
       digitalWrite(yesil,  HIGH);
     }
