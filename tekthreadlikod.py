@@ -61,11 +61,11 @@ while True:
 
             frame_center = frame.shape[1] // 2
             if cx < frame_center - 50:
-                direction = "SOL"
+                direction = "Sol"
             elif cx > frame_center + 50:
-                direction = "SAG"
+                direction = "Sag"
             else:
-                direction = "DUZ İLERLE"
+                direction = "Duz İlerle"
 
             cv2.putText(frame, f"Yon: {direction}", (50, 70),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
