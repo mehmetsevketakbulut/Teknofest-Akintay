@@ -1,89 +1,118 @@
 import cv2
 import numpy as np
+import serial
+import time
 
-cap = cv2.VideoCapture(0)  # 0, varsayılan kamerayı kullanır
+# ESP32'nin bağlı olduğu seri portu ve baudrate'i ayarla
+ser = serial.Serial('COM3', 9600)  # COM3 yerine kendi portunu yaz
+time.sleep(2)  # ESP32'nin hazır olması için kısa bekleme
 
-# Kontrast artırma (CLAHE) için parametreler
+cap = cv2.VideoCapture(0)
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
 
-# Kamera kalibrasyonu için distorsiyon matrisleri (bunları gerçek kalibrasyonla elde edebilirsin)
-# Aşağıdaki örnek, kamera distorsiyonunu düzeltmek için kullanılabilir.
-# dist_coeffs = np.zeros((5, 1))  # Distorsiyon katsayıları
-# camera_matrix = np.array([[1.0, 0, 0], [0, 1.0, 0], [0, 0, 1.0]])  # Kamera matrisi
-
 while True:
-    ret, frame = cap.read()  # Kameradan görüntü al
+    ret, frame = cap.read()
     if not ret:
         break
 
-    # Görüntüyü gri tonlamaya çevir
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-    # CLAHE ile kontrastı artır
     gray = clahe.apply(gray)
-
-    # Kamera distorsiyon düzeltmesi (Kamera matrisi ve distorsiyon katsayılarını kullan)
-    # frame = cv2.undistort(frame, camera_matrix, dist_coeffs)
-
-    # HSV renk uzayına dönüştür
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-    # Siyah renkleri filtrele (Siyah çizgiler için)
     lower_black = np.array([0, 0, 0])
-    upper_black = np.array([180, 255, 50])  # Siyah için uygun aralık
+    upper_black = np.array([180, 255, 50])
     mask = cv2.inRange(hsv, lower_black, upper_black)
 
-    # Maskeyi uygula
     result = cv2.bitwise_and(frame, frame, mask=mask)
-
-    # Görüntüyü bulanıklaştır (yaklaşırken kenarları netleştirmek için)
     result = cv2.GaussianBlur(result, (5, 5), 0)
-
-    # Canny Edge Detection
     edges = cv2.Canny(result, 50, 150)
 
-    # Morfolojik işlemler (gürültü temizleme)
     kernel = np.ones((5, 5), np.uint8)
     edges = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
 
-    # Konturları bul
     contours, _ = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
+    direction = "BEKLE"
+
     if contours:
-        # En büyük konturu (çizgiyi) bul
         largest_contour = max(contours, key=cv2.contourArea)
-
-        # Momentleri hesapla (Merkez noktasını bulmak için)
         M = cv2.moments(largest_contour)
-        if M["m00"] != 0:
-            cx = int(M["m10"] / M["m00"])  # X koordinatı
-            cy = int(M["m01"] / M["m00"])  # Y koordinatı
 
-            # Çizginin merkezine bir daire çiz
+        if M["m00"] != 0:
+            cx = int(M["m10"] / M["m00"])
+            cy = int(M["m01"] / M["m00"])
             cv2.circle(frame, (cx, cy), 5, (0, 255, 0), -1)
 
-            # Çizginin merkezine göre yön belirle
-            frame_center = frame.shape[1] // 2  # Ekranın ortası
+            frame_center = frame.shape[1] // 2
             if cx < frame_center - 50:
-                direction = "SOL"  # Çizgi sola kaydı, sola dön
+                direction = "SOL"
+                ser.write(b'L')
             elif cx > frame_center + 50:
-                direction = "SAG"  # Çizgi sağa kaydı, sağa dön
+                direction = "SAG"
+                ser.write(b'R')
             else:
-                direction = "DUZ İLERLE"
+                direction = "DUZ"
+                ser.write(b'F')
 
-            cv2.putText(frame, f"Yon: {direction}", (50, 50),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    cv2.putText(frame, f"Yon: {direction}", (50, 50),
+                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
-    # Görüntüyü ekranda göster
-    cv2.imshow("Underwater Line Following", frame)
-    cv2.imshow("Threshold", mask)
+    cv2.imshow("Kamera", frame)
+    cv2.imshow("Maske", mask)
 
-    # 'q' tuşuna basılırsa çık
-
-
-    if cv2.waitKey(1) & 0xFF == 27:
+    if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-    # 'ESC' tuşuna basılırsa çık
 
 cap.release()
+ser.close()
 cv2.destroyAllWindows()
+#Seri iletişim kodu goruntuye gore L F R harfi göndercek
+#c++ ardunıo kodu komutlara gore araca yon verecek
+
+#include <ESP32Servo.h>
+
+#define maxdeger 1940
+#define mindeger 1060
+
+Servo onsagalt, onsolalt, onsolust, onsagust;
+Servo arsagalt, arsagust, arsolalt, arsolust;
+
+void setup() {
+  Serial.begin(9600);
+  Serial.println("OTOMATİK MOD: ÇİZGİ TAKİP");
+
+  onsagust.attach(D1);
+  onsolust.attach(D2); 
+  arsolust.attach(D3);
+  arsagust.attach(D4);
+  onsagalt.attach(D5);
+  onsolalt.attach(D6);
+  arsolalt.attach(D7);
+  arsagalt.attach(D8);
+}
+
+void loop() {
+  if (Serial.available() > 0) {
+    char komut = Serial.read();
+
+    if (komut == 'F') {  // DÜZ GİT
+      hareketVer(1600, 1600);
+    } else if (komut == 'L') {  // SOLA DÖN
+      hareketVer(1400, 1600);
+    } else if (komut == 'R') {  // SAĞA DÖN
+      hareketVer(1600, 1400);
+    }
+  }
+}
+
+void hareketVer(int sol, int sag) {
+  onsagust.writeMicroseconds(sag);
+  onsagalt.writeMicroseconds(sag);
+  arsagust.writeMicroseconds(sag);
+  arsagalt.writeMicroseconds(sag);
+
+  onsolust.writeMicroseconds(sol);
+  onsolalt.writeMicroseconds(sol);
+  arsolust.writeMicroseconds(sol);
+  arsolalt.writeMicroseconds(sol);
+}
