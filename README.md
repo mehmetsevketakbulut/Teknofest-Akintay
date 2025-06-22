@@ -41,5 +41,5 @@ arduino = serial.Serial('COM3', 9600)  # Port numarasını sistemine göre ayarl
 time.sleep(2)  # Bağlantı kurulmasını bekle
 while True:
     deger=input("Ledin istikbali nedir? ")
-    arduino.write((deger + '\n').())  # Arduino'ya veri gonder
+    arduino.write((deger + '\n').encode())  # Arduino'ya veri gonder
     print(f"Veri gönderildi: {deger}")  # Konsola yaz
