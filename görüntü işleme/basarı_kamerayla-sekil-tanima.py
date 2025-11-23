@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-
+//kütüphanelerin yüklenmesi
 framewidth = 640
 frameheight = 480
 cap = cv2.VideoCapture(0)
